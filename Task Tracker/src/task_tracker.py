@@ -45,7 +45,7 @@ def add_task(description):
     }
     tasks.append(task)
     save_tasks(tasks)
-    print(f"Tarefa adicionada com sucesso (ID: {task_id})")
+    print(f"Task added successfully (ID: {task_id})")
 
 
 def update_task(task_id, new_description):
@@ -59,26 +59,26 @@ def update_task(task_id, new_description):
             break
     if found:
         save_tasks(tasks)
-        print(f"Tarefa {task_id} atualizada com sucesso.")
+        print(f"Task {task_id} updated successfully.")
     else:
-        print(f"Tarefa com ID {task_id} não encontrada.")
+        print(f"Task with ID {task_id} not found.")
 
 
 def delete_task(task_id):
     tasks = load_tasks()
     new_tasks = [task for task in tasks if task["id"] != task_id]
     if len(new_tasks) == len(tasks):
-        print(f"Tarefa com ID {task_id} não encontrada.")
+        print(f"Task with ID {task_id} not found.")
     else:
         save_tasks(new_tasks)
-        print(f"Tarefa {task_id} deletada com sucesso.")
+        print(f"Task {task_id} deleted successfully.")
 
 
 def mark_task_status(task_id, new_status):
     tasks = load_tasks()
     valid_status = {"todo", "in-progress", "done"}
     if new_status not in valid_status:
-        print(f"Status inválido: {new_status}")
+        print(f"Invalid status: {new_status}")
         return
     found = False
     for task in tasks:
@@ -89,9 +89,9 @@ def mark_task_status(task_id, new_status):
             break
     if found:
         save_tasks(tasks)
-        print(f"Tarefa {task_id} marcada como {new_status}.")
+        print(f"Task {task_id} marked as {new_status}.")
     else:
-        print(f"Tarefa com ID {task_id} não encontrada.")
+        print(f"Task with ID {task_id} not found.")
 
 
 def list_tasks(filter_status=None):
@@ -99,26 +99,26 @@ def list_tasks(filter_status=None):
     if filter_status:
         tasks = [task for task in tasks if task["status"] == filter_status]
     if not tasks:
-        print("Nenhuma tarefa encontrada.")
+        print("No tasks found.")
         return
     for task in tasks:
         print(
-            f"ID: {task['id']} | Descrição: {task['description']} | Status: {task['status']} | Criada: {task['createdAt']} | Atualizada: {task['updatedAt']}"
+            f"ID: {task['id']} | Description: {task['description']} | Status: {task['status']} | Created: {task['createdAt']} | Updated: {task['updatedAt']}"
         )
 
 
 def print_help():
     help_text = """
-Comando para uso:
-    python task_tracker.py add "Descrição da Tarefa"
-    python task_tracker.py update <id> "Nova Descrição"
+Usage:
+    python task_tracker.py add "Task Description"
+    python task_tracker.py update <id> "New Description"
     python task_tracker.py delete <id>
     python task_tracker.py mark-in-progress <id>
     python task_tracker.py mark-done <id>
     python task_tracker.py list [status]
 
-status pode ser: todo, in-progress, done
-Se nenhum status for informado em list, todas as tarefas serão exibidas.
+Status can be: todo, in-progress, done
+If no status is provided in the list command, all tasks will be displayed.
 """
     print(help_text)
 
@@ -131,49 +131,49 @@ def main():
     command = sys.argv[1]
     if command == "add":
         if len(sys.argv) < 3:
-            print("Por favor, informe a descrição da tarefa.")
+            print("Please provide the task description.")
             sys.exit(1)
         description = sys.argv[2]
         add_task(description)
     elif command == "update":
         if len(sys.argv) < 4:
-            print("Por favor, informe o ID da tarefa e a nova descrição.")
+            print("Please provide the task ID and the new description.")
             sys.exit(1)
         try:
             task_id = int(sys.argv[2])
         except ValueError:
-            print("O ID da tarefa deve ser um número inteiro.")
+            print("Task ID must be an integer.")
             sys.exit(1)
         new_description = sys.argv[3]
         update_task(task_id, new_description)
     elif command == "delete":
         if len(sys.argv) < 3:
-            print("Por favor, informe o ID da tarefa.")
+            print("Please provide the task ID.")
             sys.exit(1)
         try:
             task_id = int(sys.argv[2])
         except ValueError:
-            print("O ID da tarefa deve ser um número inteiro.")
+            print("Task ID must be an integer.")
             sys.exit(1)
         delete_task(task_id)
     elif command == "mark-in-progress":
         if len(sys.argv) < 3:
-            print("Por favor, informe o ID da tarefa.")
+            print("Please provide the task ID.")
             sys.exit(1)
         try:
             task_id = int(sys.argv[2])
         except ValueError:
-            print("O ID da tarefa deve ser um número inteiro.")
+            print("Task ID must be an integer.")
             sys.exit(1)
         mark_task_status(task_id, "in-progress")
     elif command == "mark-done":
         if len(sys.argv) < 3:
-            print("Por favor, informe o ID da tarefa.")
+            print("Please provide the task ID.")
             sys.exit(1)
         try:
             task_id = int(sys.argv[2])
         except ValueError:
-            print("O ID da tarefa deve ser um número inteiro.")
+            print("Task ID must be an integer.")
             sys.exit(1)
         mark_task_status(task_id, "done")
     elif command == "list":
@@ -182,11 +182,11 @@ def main():
         else:
             filter_status = sys.argv[2]
             if filter_status not in ["todo", "in-progress", "done"]:
-                print("Status inválido. Os status válidos são: todo, in-progress, done")
+                print("Invalid status. Valid statuses are: todo, in-progress, done")
                 sys.exit(1)
             list_tasks(filter_status)
     else:
-        print("Comando desconhecido.")
+        print("Unknown command.")
         print_help()
 
 
