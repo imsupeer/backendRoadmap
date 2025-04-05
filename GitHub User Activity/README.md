@@ -19,7 +19,7 @@ The application should run from the command line, accept the GitHub username as 
     </p>
 
 - Display the fetched activity in the terminal.\
-   Output:\
+   Output: <br />
    <p>
   Pushed 3 commits to kamranahmedse/developer-roadmap\
    Opened a new issue in kamranahmedse/developer-roadmap\
