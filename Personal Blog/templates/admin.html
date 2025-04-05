@@ -1,0 +1,27 @@
+{% extends "base.html" %} {% block title %}Admin Dashboard - Basas Personal Blog{% endblock %} {% block content %}
+<h2>Dashboard</h2>
+<a
+  href="{{ url_for('new_article') }}"
+  style="
+    display: inline-block;
+    margin-bottom: 1rem;
+    background-color: #6a1b9a;
+    padding: 0.5rem 1rem;
+    color: #fff;
+    border-radius: 3px;
+    text-decoration: none;
+  "
+  >+ Add New Article</a
+>
+<ul class="article-list">
+  {% for article in articles %}
+  <li>
+    {{ article.title }} ({{ article.date }})
+    <a href="{{ url_for('edit_article', article_id=article.id) }}">Edit</a>
+    <form action="{{ url_for('delete_article_route', article_id=article.id) }}" method="POST" style="display: inline">
+      <button type="submit" onclick="return confirm('Are you sure?')">Delete</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

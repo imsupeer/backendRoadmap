@@ -1,0 +1,15 @@
+{% extends "base.html" %} {% block title %}New Article - Basas Personal Blog{% endblock %} {% block content %}
+<h2>New Article</h2>
+<form method="POST">
+  <label>Article Title:</label>
+  <input type="text" name="title" required />
+
+  <label>Publishing Date (YYYY-MM-DD):</label>
+  <input type="text" name="date" placeholder="2024-08-07" />
+
+  <label>Content:</label>
+  <textarea name="content" rows="8" required></textarea>
+
+  <input type="submit" value="Publish" />
+</form>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %} {% block title %}Edit Article - Basas Personal Blog{% endblock %} {% block content %}
+<h2>Edit Article</h2>
+<form method="POST">
+  <label>Article Title:</label>
+  <input type="text" name="title" value="{{ article.title }}" required />
+
+  <label>Publishing Date (YYYY-MM-DD):</label>
+  <input type="text" name="date" value="{{ article.date }}" />
+
+  <label>Content:</label>
+  <textarea name="content" rows="8" required>{{ article.content }}</textarea>
+
+  <input type="submit" value="Update" />
+</form>
+{% endblock %}
