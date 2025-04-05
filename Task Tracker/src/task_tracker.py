@@ -3,7 +3,9 @@ import sys
 import os
 from datetime import datetime
 
-TASKS_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "tasks.json")
+TASKS_FILE = os.getenv(
+    "TASKS_FILE", os.path.join(os.path.dirname(__file__), "..", "data", "tasks.json")
+)
 
 
 def load_tasks():
@@ -107,7 +109,7 @@ def list_tasks(filter_status=None):
 
 def print_help():
     help_text = """
-Uso:
+Comando para uso:
     python task_tracker.py add "Descrição da Tarefa"
     python task_tracker.py update <id> "Nova Descrição"
     python task_tracker.py delete <id>

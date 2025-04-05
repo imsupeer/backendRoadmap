@@ -1,277 +1,117 @@
-import os
-import sys
-import tempfile
-import shutil
-import subprocess
 import unittest
-import json
+from unittest.mock import patch, MagicMock
+from src import task_tracker
+from tests import mock_loader
 
 
-class TestTaskTrackerCLI(unittest.TestCase):
+class TestTaskTracker(unittest.TestCase):
     def setUp(self):
-        self.test_dir = tempfile.mkdtemp()
-        self.src_dir = os.path.join(self.test_dir, "src")
-        self.data_dir = os.path.join(self.test_dir, "data")
-        os.makedirs(self.src_dir, exist_ok=True)
-        os.makedirs(self.data_dir, exist_ok=True)
+        self.initial_task = mock_loader.from_json("mocks/test_tasks.json")
+        self.updated_description = "Comprar mantimentos e preparar jantar"
+        self.fake_now = "2025-04-04T00:00:00"
 
-        self.task_tracker_code = r'''
-import json
-import sys
-import os
-from datetime import datetime
+    @patch("src.task_tracker.save_tasks")
+    @patch("src.task_tracker.load_tasks")
+    @patch("src.task_tracker.datetime")
+    @patch("builtins.print")
+    def test_add_task(
+        self, mock_print, mock_datetime, mock_load_tasks, mock_save_tasks
+    ):
+        mock_load_tasks.return_value = []
+        fake_now_obj = MagicMock()
+        fake_now_obj.isoformat.return_value = self.fake_now
+        mock_datetime.now.return_value = fake_now_obj
 
-TASKS_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "tasks.json")
+        task_tracker.add_task("Comprar mantimentos")
 
-def load_tasks():
-    if not os.path.exists(TASKS_FILE):
-        return []
-    with open(TASKS_FILE, 'r', encoding="utf-8") as f:
-        try:
-            tasks = json.load(f)
-        except json.JSONDecodeError:
-            tasks = []
-    return tasks
+        mock_save_tasks.assert_called_once()
+        tasks_arg = mock_save_tasks.call_args[0][0]
+        self.assertEqual(len(tasks_arg), 1)
+        self.assertEqual(tasks_arg[0]["description"], "Comprar mantimentos")
+        self.assertEqual(tasks_arg[0]["status"], "todo")
+        self.assertEqual(tasks_arg[0]["createdAt"], self.fake_now)
+        self.assertEqual(tasks_arg[0]["updatedAt"], self.fake_now)
 
-def save_tasks(tasks):
-    os.makedirs(os.path.dirname(TASKS_FILE), exist_ok=True)
-    with open(TASKS_FILE, 'w', encoding="utf-8") as f:
-        json.dump(tasks, f, indent=4, ensure_ascii=False)
+        mock_print.assert_called_once()
+        self.assertIn("Tarefa adicionada com sucesso", mock_print.call_args[0][0])
 
-def get_next_id(tasks):
-    if tasks:
-        return max(task['id'] for task in tasks) + 1
-    else:
-        return 1
+    @patch("src.task_tracker.save_tasks")
+    @patch("src.task_tracker.load_tasks")
+    @patch("builtins.print")
+    def test_update_task_success(self, mock_print, mock_load_tasks, mock_save_tasks):
+        mock_load_tasks.return_value = [self.initial_task.copy()]
 
-def add_task(description):
-    tasks = load_tasks()
-    task_id = get_next_id(tasks)
-    now = datetime.now().isoformat()
-    task = {
-        "id": task_id,
-        "description": description,
-        "status": "todo",
-        "createdAt": now,
-        "updatedAt": now
-    }
-    tasks.append(task)
-    save_tasks(tasks)
-    print(f"Tarefa adicionada com sucesso (ID: {task_id})")
+        task_tracker.update_task(1, self.updated_description)
 
-def update_task(task_id, new_description):
-    tasks = load_tasks()
-    found = False
-    for task in tasks:
-        if task['id'] == task_id:
-            task['description'] = new_description
-            task['updatedAt'] = datetime.now().isoformat()
-            found = True
-            break
-    if found:
-        save_tasks(tasks)
-        print(f"Tarefa {task_id} atualizada com sucesso.")
-    else:
-        print(f"Tarefa com ID {task_id} não encontrada.")
+        tasks_arg = mock_save_tasks.call_args[0][0]
+        self.assertEqual(tasks_arg[0]["description"], self.updated_description)
+        mock_print.assert_called_once_with("Tarefa 1 atualizada com sucesso.")
 
-def delete_task(task_id):
-    tasks = load_tasks()
-    new_tasks = [task for task in tasks if task['id'] != task_id]
-    if len(new_tasks) == len(tasks):
-        print(f"Tarefa com ID {task_id} não encontrada.")
-    else:
-        save_tasks(new_tasks)
-        print(f"Tarefa {task_id} deletada com sucesso.")
+    @patch("src.task_tracker.save_tasks")
+    @patch("src.task_tracker.load_tasks")
+    @patch("builtins.print")
+    def test_update_task_not_found(self, mock_print, mock_load_tasks, mock_save_tasks):
+        mock_load_tasks.return_value = []
+        task_tracker.update_task(99, self.updated_description)
+        mock_print.assert_called_once_with("Tarefa com ID 99 não encontrada.")
+        mock_save_tasks.assert_not_called()
 
-def mark_task_status(task_id, new_status):
-    tasks = load_tasks()
-    valid_status = {"todo", "in-progress", "done"}
-    if new_status not in valid_status:
-        print(f"Status inválido: {new_status}")
-        return
-    found = False
-    for task in tasks:
-        if task['id'] == task_id:
-            task['status'] = new_status
-            task['updatedAt'] = datetime.now().isoformat()
-            found = True
-            break
-    if found:
-        save_tasks(tasks)
-        print(f"Tarefa {task_id} marcada como {new_status}.")
-    else:
-        print(f"Tarefa com ID {task_id} não encontrada.")
+    @patch("src.task_tracker.save_tasks")
+    @patch("src.task_tracker.load_tasks")
+    @patch("builtins.print")
+    def test_delete_task_success(self, mock_print, mock_load_tasks, mock_save_tasks):
+        mock_load_tasks.return_value = [self.initial_task.copy()]
+        task_tracker.delete_task(1)
+        mock_print.assert_called_once_with("Tarefa 1 deletada com sucesso.")
+        tasks_arg = mock_save_tasks.call_args[0][0]
+        self.assertEqual(len(tasks_arg), 0)
 
-def list_tasks(filter_status=None):
-    tasks = load_tasks()
-    if filter_status:
-        tasks = [task for task in tasks if task['status'] == filter_status]
-    if not tasks:
-        print("Nenhuma tarefa encontrada.")
-        return
-    for task in tasks:
-        print(f"ID: {task['id']} | Descrição: {task['description']} | Status: {task['status']} | Criada: {task['createdAt']} | Atualizada: {task['updatedAt']}")
+    @patch("src.task_tracker.save_tasks")
+    @patch("src.task_tracker.load_tasks")
+    @patch("builtins.print")
+    def test_delete_task_not_found(self, mock_print, mock_load_tasks, mock_save_tasks):
+        mock_load_tasks.return_value = []
+        task_tracker.delete_task(99)
+        mock_print.assert_called_once_with("Tarefa com ID 99 não encontrada.")
+        mock_save_tasks.assert_not_called()
 
-def print_help():
-    help_text = """
-Uso:
-    python task_tracker.py add "Descrição da Tarefa"
-    python task_tracker.py update <id> "Nova Descrição"
-    python task_tracker.py delete <id>
-    python task_tracker.py mark-in-progress <id>
-    python task_tracker.py mark-done <id>
-    python task_tracker.py list [status]
+    @patch("src.task_tracker.save_tasks")
+    @patch("src.task_tracker.load_tasks")
+    @patch("builtins.print")
+    def test_mark_task_status_in_progress_success(
+        self, mock_print, mock_load_tasks, mock_save_tasks
+    ):
+        mock_load_tasks.return_value = [self.initial_task.copy()]
+        task_tracker.mark_task_status(1, "in-progress")
+        tasks_arg = mock_save_tasks.call_args[0][0]
+        self.assertEqual(tasks_arg[0]["status"], "in-progress")
+        mock_print.assert_called_once_with("Tarefa 1 marcada como in-progress.")
 
-status pode ser: todo, in-progress, done
-Se nenhum status for informado em list, todas as tarefas serão exibidas.
-"""
-    print(help_text)
+    @patch("src.task_tracker.save_tasks")
+    @patch("src.task_tracker.load_tasks")
+    @patch("builtins.print")
+    def test_mark_task_status_done_success(
+        self, mock_print, mock_load_tasks, mock_save_tasks
+    ):
+        mock_load_tasks.return_value = [self.initial_task.copy()]
+        task_tracker.mark_task_status(1, "done")
+        tasks_arg = mock_save_tasks.call_args[0][0]
+        self.assertEqual(tasks_arg[0]["status"], "done")
+        mock_print.assert_called_once_with("Tarefa 1 marcada como done.")
 
-def main():
-    if len(sys.argv) < 2:
-        print_help()
-        sys.exit(1)
+    @patch("src.task_tracker.load_tasks")
+    @patch("builtins.print")
+    def test_list_tasks_no_tasks(self, mock_print, mock_load_tasks):
+        mock_load_tasks.return_value = []
+        task_tracker.list_tasks()
+        mock_print.assert_called_once_with("Nenhuma tarefa encontrada.")
 
-    command = sys.argv[1]
-    if command == "add":
-        if len(sys.argv) < 3:
-            print("Por favor, informe a descrição da tarefa.")
-            sys.exit(1)
-        description = sys.argv[2]
-        add_task(description)
-    elif command == "update":
-        if len(sys.argv) < 4:
-            print("Por favor, informe o ID da tarefa e a nova descrição.")
-            sys.exit(1)
-        try:
-            task_id = int(sys.argv[2])
-        except ValueError:
-            print("O ID da tarefa deve ser um número inteiro.")
-            sys.exit(1)
-        new_description = sys.argv[3]
-        update_task(task_id, new_description)
-    elif command == "delete":
-        if len(sys.argv) < 3:
-            print("Por favor, informe o ID da tarefa.")
-            sys.exit(1)
-        try:
-            task_id = int(sys.argv[2])
-        except ValueError:
-            print("O ID da tarefa deve ser um número inteiro.")
-            sys.exit(1)
-        delete_task(task_id)
-    elif command == "mark-in-progress":
-        if len(sys.argv) < 3:
-            print("Por favor, informe o ID da tarefa.")
-            sys.exit(1)
-        try:
-            task_id = int(sys.argv[2])
-        except ValueError:
-            print("O ID da tarefa deve ser um número inteiro.")
-            sys.exit(1)
-        mark_task_status(task_id, "in-progress")
-    elif command == "mark-done":
-        if len(sys.argv) < 3:
-            print("Por favor, informe o ID da tarefa.")
-            sys.exit(1)
-        try:
-            task_id = int(sys.argv[2])
-        except ValueError:
-            print("O ID da tarefa deve ser um número inteiro.")
-            sys.exit(1)
-        mark_task_status(task_id, "done")
-    elif command == "list":
-        if len(sys.argv) == 2:
-            list_tasks()
-        else:
-            filter_status = sys.argv[2]
-            if filter_status not in ["todo", "in-progress", "done"]:
-                print("Status inválido. Os status válidos são: todo, in-progress, done")
-                sys.exit(1)
-            list_tasks(filter_status)
-    else:
-        print("Comando desconhecido.")
-        print_help()
-
-if __name__ == "__main__":
-    main()
-'''
-        self.task_tracker_path = os.path.join(self.src_dir, "task_tracker.py")
-        with open(self.task_tracker_path, "w", encoding="utf-8") as f:
-            f.write(self.task_tracker_code)
-
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
-
-    def run_command(self, args):
-
-        cmd = [sys.executable, os.path.join("src", "task_tracker.py")] + args
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.test_dir)
-        return result.stdout, result.stderr
-
-    def test_add_task(self):
-        stdout, _ = self.run_command(["add", "Comprar mantimentos"])
-        self.assertIn("Tarefa adicionada com sucesso", stdout)
-        tasks_file = os.path.join(self.test_dir, "data", "tasks.json")
-        self.assertTrue(os.path.exists(tasks_file))
-        with open(tasks_file, "r", encoding="utf-8") as f:
-            tasks = json.load(f)
-        self.assertEqual(len(tasks), 1)
-        self.assertEqual(tasks[0]["description"], "Comprar mantimentos")
-
-    def test_update_task(self):
-        self.run_command(["add", "Comprar mantimentos"])
-        stdout, _ = self.run_command(
-            ["update", "1", "Comprar mantimentos e preparar jantar"]
-        )
-        self.assertIn("Tarefa 1 atualizada com sucesso", stdout)
-        tasks_file = os.path.join(self.test_dir, "data", "tasks.json")
-        with open(tasks_file, "r", encoding="utf-8") as f:
-            tasks = json.load(f)
-        self.assertEqual(
-            tasks[0]["description"], "Comprar mantimentos e preparar jantar"
-        )
-
-    def test_delete_task(self):
-        self.run_command(["add", "Comprar mantimentos"])
-        stdout, _ = self.run_command(["delete", "1"])
-        self.assertIn("Tarefa 1 deletada com sucesso", stdout)
-        tasks_file = os.path.join(self.test_dir, "data", "tasks.json")
-        with open(tasks_file, "r", encoding="utf-8") as f:
-            tasks = json.load(f)
-        self.assertEqual(len(tasks), 0)
-
-    def test_mark_in_progress(self):
-        self.run_command(["add", "Comprar mantimentos"])
-        stdout, _ = self.run_command(["mark-in-progress", "1"])
-        self.assertIn("Tarefa 1 marcada como in-progress", stdout)
-        tasks_file = os.path.join(self.test_dir, "data", "tasks.json")
-        with open(tasks_file, "r", encoding="utf-8") as f:
-            tasks = json.load(f)
-        self.assertEqual(tasks[0]["status"], "in-progress")
-
-    def test_mark_done(self):
-        self.run_command(["add", "Comprar mantimentos"])
-        stdout, _ = self.run_command(["mark-done", "1"])
-        self.assertIn("Tarefa 1 marcada como done", stdout)
-        tasks_file = os.path.join(self.test_dir, "data", "tasks.json")
-        with open(tasks_file, "r", encoding="utf-8") as f:
-            tasks = json.load(f)
-        self.assertEqual(tasks[0]["status"], "done")
-
-    def test_list_tasks(self):
-        self.run_command(["add", "Task 1"])
-        self.run_command(["add", "Task 2"])
-        self.run_command(["mark-done", "2"])
-        stdout_all, _ = self.run_command(["list"])
-        self.assertIn("Task 1", stdout_all)
-        self.assertIn("Task 2", stdout_all)
-        stdout_todo, _ = self.run_command(["list", "todo"])
-        self.assertIn("Task 1", stdout_todo)
-        self.assertNotIn("Task 2", stdout_todo)
-        stdout_done, _ = self.run_command(["list", "done"])
-        self.assertIn("Task 2", stdout_done)
-        self.assertNotIn("Task 1", stdout_done)
+    @patch("src.task_tracker.load_tasks")
+    @patch("builtins.print")
+    def test_list_tasks_with_tasks(self, mock_print, mock_load_tasks):
+        mock_load_tasks.return_value = [self.initial_task.copy()]
+        task_tracker.list_tasks()
+        self.assertTrue(mock_print.call_count > 0)
 
 
 if __name__ == "__main__":
