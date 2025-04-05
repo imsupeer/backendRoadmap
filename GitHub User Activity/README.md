@@ -21,8 +21,8 @@ The application should run from the command line, accept the GitHub username as 
 - Display the fetched activity in the terminal.\
    Output: <br />
    <p>
-  Pushed 3 commits to kamranahmedse/developer-roadmap\
-   Opened a new issue in kamranahmedse/developer-roadmap\
+   Pushed 3 commits to kamranahmedse/developer-roadmap <br />
+   Opened a new issue in kamranahmedse/developer-roadmap <br />
    Starred kamranahmedse/developer-roadmap
   </p>
 
