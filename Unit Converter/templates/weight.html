@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Weight Converter</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Weight Converter</h1>
+        <nav>
+          <a href="/length">Length</a>
+          <a href="/weight">Weight</a>
+          <a href="/temperature">Temperature</a>
+        </nav>
+      </header>
+      <main>
+        <div class="converter-form">
+          <form method="POST">
+            <label>Enter the weight to convert:</label>
+            <input type="text" name="value" placeholder="Value" required />
+
+            <label>Unit to Convert from:</label>
+            <select name="from_unit">
+              <option value="milligram">Milligram</option>
+              <option value="gram">Gram</option>
+              <option value="kilogram">Kilogram</option>
+              <option value="ounce">Ounce</option>
+              <option value="pound">Pound</option>
+            </select>
+
+            <label>Unit to Convert to:</label>
+            <select name="to_unit">
+              <option value="milligram">Milligram</option>
+              <option value="gram">Gram</option>
+              <option value="kilogram">Kilogram</option>
+              <option value="ounce">Ounce</option>
+              <option value="pound">Pound</option>
+            </select>
+
+            <button type="submit">Convert</button>
+          </form>
+          {% if result %}
+          <div class="result">
+            <h2>Result</h2>
+            <p>{{ result }}</p>
+            <a href="/weight" class="reset-btn">Reset</a>
+          </div>
+          {% endif %}
+        </div>
+      </main>
+      <footer>
+        <p>&copy; Basas Unit Converter Project</p>
+      </footer>
+    </div>
+  </body>
+</html>
