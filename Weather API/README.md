@@ -1,3 +1,6 @@
+# Note
+To run this project i've used a docker container with redis.
+
 # Weather API
 Build a weather API that fetches and returns weather data.
 
